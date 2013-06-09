@@ -1,0 +1,357 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Map My School</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<link rel="stylesheet" href="jquery.mobile-1.2.0.min.css" />
+	<script src="jquery-1.8.2.min.js"></script>
+	<script src="jquery.mobile-1.2.0.min.js"></script>
+	<script src="jquery.validate-1.1.js"></script>
+	<script src="phonegap.js"></script>
+	
+	<script type='text/javascript'>
+		
+		var imageData;
+		var latitude;
+		var longitude;
+		
+		document.addEventListener("deviceready", onDeviceReady, false);
+
+    // Cordova is ready
+    //
+    function onDeviceReady() {
+        navigator.geolocation.getCurrentPosition(onSuccess, onError);
+		alert('Device Name: '     + device.name     + '<br />' + 
+                            'Device Cordova: '  + device.cordova + '<br />' + 
+                            'Device Platform: ' + device.platform + '<br />' + 
+                            'Device UUID: '     + device.uuid     + '<br />' + 
+                            'Device Model: '    + device.model     + '<br />' + 
+                            'Device Version: '  + device.version  + '<br />');
+    }
+
+    // onSuccess Geolocation
+    //
+    function onSuccess(position) {
+		latitude = position.coords.latitude;
+		longitude = position.coords.longitude;
+		alert(latitude+','+longitude);
+    }
+
+    // onError Callback receives a PositionError object
+    //
+    function onError(error) {
+        alert('code: '    + error.code    + '\n' +
+                'message: ' + error.message + '\n');
+    }
+		
+		$.fn.serializeObject = function()
+		{
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function() {
+				
+				if (o[this.name] !== undefined) {
+					if (!o[this.name].push) {
+						o[this.name] = [o[this.name]];
+					}
+					console.log(this.name);
+					if(this.name == "lowest_class" || this.name == "highest_class" || this.name == "school_type" || 
+						this.name == "pincode" || this.name == "recognized" || this.name == "") {
+						//alert(this.name);
+						o[this.name].push(parseInt(this.value) || '');
+					} else {
+						o[this.name].push(this.value || '');
+					}
+				} else {
+					console.log(o);
+					if(this.name == "lowest_class" || this.name == "highest_class" || this.name == "school_type" || 
+						this.name == "pincode" || this.name == "recognized" || this.name == "") {
+					
+						o[this.name] = parseInt(this.value) || '';
+					} else {
+						o[this.name] = this.value || '';
+					}
+				}
+			});
+			return o;
+		};
+		
+		$(document).ready(function() {
+					$("#school_form").validate({
+			submitHandler: function(form) {
+			     console.log($(form));
+			     console.log(JSON.stringify($(form).serializeObject()));
+			     $(form).submit(function () {
+			    	 	console.log('submit form');
+						//alert("in clcik");
+				var postData = {
+					"address": $('#id_address').val(), 
+					"examination_board": $('#id_examination_board').val(), 
+					"highest_class": parseInt($('#id_highest_class').val()), 
+					"latitude": latitude,
+					"longitude": longitude,
+					"lowest_class": parseInt($('#id_lowest_class').val()), 
+					"medium_of_instructions": $('#id_medium_of_instructions').val(),
+					"monthly_fee_for_highest_class": parseInt($('#id_monthly_fee_for_highest_class').val()),
+					"monthly_fee_for_lowest_class": parseInt($('#id_monthly_fee_for_lowest_class').val()),
+					"name": $('#id_name').val(),
+					"other_fee_per_annum": parseInt($('#id_other_fee_per_annum').val()),
+					"pincode": parseInt($('#id_pincode').val()),
+					"recognized": parseInt($('#id_recognized').val()),
+					"school_type": parseInt($('#id_school_type').val()),
+					"short_name": $('#id_short_name').val(),
+					"image": imageData
+					}
+				//alert(postData);
+				$.ajax({
+					type: "GET",
+					url: 'http://54.214.7.11/addschool/',
+					async: true,
+					dataType: "jsonp",
+					data: postData,
+					success: function (data) {	
+						alert("Thanks!"); 
+						//alert(data);
+						$('#school_form')[0].reset();
+					},
+					error: function (xhr, ajaxOptions, thrownError) {
+						alert("Data Has been Uploaded"); 
+						alert(xhr.status);
+						alert(xhr);
+						console.log(xhr);
+						alert(thrownError);
+						$('#school_form')[0].reset();
+					}
+				});
+				
+			     });
+			   },
+				rules: {
+					name: {
+						required: true,
+						minlength: 2,
+						maxlength: 200						
+					},
+					lowest_class: "required",
+					highest_class: "required",
+					recognized: "required",
+					school_type: "required",
+					medium_of_instructions : "required",
+					pincode: {
+						required: true,
+						digits: true
+					},
+					other_fee_per_annum: {
+						required: false,
+						digits: true
+					},
+					monthly_fee_for_lowest_class : {
+						required: false,
+						digits: true
+					}
+				},
+				messages: {
+					name: {
+						required: 'Name is required',
+						minlength: 'Min allowed length for name is 2 chars',
+						maxlength: 'Max allowed length for name is 200 chars'					
+					},
+					lowest_class: "Enter Lowest Class",
+					highest_class: "Enter Highest Class",
+					recognized: "Enter Recognized",
+					school_type: "Enter School Type",
+					medium_of_instructions : "Enter Medium of instructions",
+					pincode: {
+						required: 'pincode is required',
+						digits: 'Only integers are allowed in pincode'
+					},
+					other_fee_per_annum: {
+						digits: 'Only Integers are allowed in other fees'
+					},
+					monthly_fee_for_lowest_class : {
+						digits: 'Only Integers are allowed in monthly fees'
+					}
+				}
+			});
+			
+			//$("#submit").click(function(){
+				
+			//});
+		});
+		function capturePhoto(){
+		    navigator.camera.getPicture(uploadPhoto,null,{sourceType:1,quality:60, destinationType : Camera.DestinationType.DATA_URL});
+			
+		}
+		function uploadPhoto(data){
+		// this is where you would send the image file to server
+		    
+			var smallImage = document.getElementById('cameraPic');
+
+      // Unhide image elements
+      //
+			
+			smallImage.style.display = 'block';
+
+      // Show the captured photo
+      // The inline CSS rules are used to resize the image
+      //
+			smallImage.src = "data:image/jpeg;base64," + data;
+			//alert(data);
+			imageData = data;
+			return false;
+			/*navigator.notification.alert(
+		        data,  // message
+		        okay,                           // callback
+		        'Photo Uploaded',              // title
+		        'OK'                          // buttonName
+		    );
+		    // Successful upload to the server
+		    navigator.notification.alert(
+		        'Your Photo has been uploaded',  // message
+		        okay,                           // callback
+		        'Photo Uploaded',              // title
+		        'OK'                          // buttonName
+		    );*/
+		
+		    // upload has failed Fail
+		    /*
+		    if (failedToUpload){
+		    navigator.notification.alert(
+		        'Your Photo has failed to upload',
+		        failedDismissed,
+		        'Photo Not Uploaded',
+		        'OK'
+		        );
+		    }
+		    */
+		}
+		function okay(){
+		    // Do something
+		}
+		
+		
+	</script>
+</head> 
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+		<h1>Map My School</h1>
+	</div><!-- /header -->
+
+	<div data-role="content">	
+			<div> 
+					<form id="school_form">
+					<div class="form-row field-name"> 
+						<div> 
+						<label for="id_name" class="required"><b>Name:*</b></label> 
+						<input id="id_name" type="text" class="vTextField" name="name" maxlength="200"> 
+						</div> 
+					</div> 
+					<div class="form-row field-lowest_class"> 
+					<div> 
+						<label for="id_lowest_class" class="required"><b>Lowest class*:</b></label> 
+						<select name="lowest_class" id="id_lowest_class"> <option value="" selected="selected">---------</option> <option value="1">First</option> <option value="2">Second</option> <option value="3">Third</option> <option value="4">Fourth</option> <option value="5">Fifth</option> <option value="6">Sixth</option> <option value="7">Seventh</option> <option value="8">Eight</option> <option value="9">Ninth</option> <option value="10">Tenth</option> <option value="11">Eleventh</option> <option value="12">Twelth</option> </select> 
+					</div> 
+					</div> 
+					<div class="form-row field-highest_class"> 
+					<div> 
+					<label for="id_highest_class" class="required"><b>Highest class*:</b></label> 
+					<select name="highest_class" id="id_highest_class"> <option value="" selected="selected">---------</option> 
+					<option value="1">First</option> <option value="2">Second</option> <option value="3">Third</option> <option value="4">Fourth</option> <option value="5">Fifth</option> <option value="6">Sixth</option> <option value="7">Seventh</option> <option value="8">Eight</option> <option value="9">Ninth</option> <option value="10">Tenth</option> <option value="11">Eleventh</option> <option value="12">Twelth</option> </select> 
+					</div> 
+					</div> 
+					<div class="form-row field-recognized"> 
+					<div> 
+					<label for="id_recognized" class="required"><b>Recognized*:</b></label> 
+					<select name="recognized" id="id_recognized"> <option value="" selected="selected">---------</option> <option value="1">YES</option> <option value="0">No</option> </select> 
+					</div> 
+					</div> 
+					<div class="form-row field-type"> 
+					<div>
+					 <label for="id_type" class="required"><b>Type*:</b></label> <select name="school_type" id="id_school_type"> <option value="" selected="selected">---------</option> <option value="1">Goverenment Aided</option> <option value="0">Private</option> <option value="2">Goverenment</option> <option value="3">Religious</option> </select> 
+					 </div> 
+					 </div> 
+					 <div class="form-row field-medium_of_instructions"> 
+					 <div> <label for="id_medium_of_instructions"><b>Medium Of Instruction*:</b></label> 
+					 <select id="id_medium_of_instructions" name="medium_of_instructions">
+						<option value="">---------</option>
+						<option value="English" selected="selected">English</option>
+						<option value="Hindi">Hindi</option>
+						<option value="Mix English and Hindi">Mix English and Hindi</option>
+						<option value="Urdu">Urdu</option>
+						<option value="Gujrathi">Gujrathi</option>
+						<option value="Tamil">Tamil</option>
+						<option value="Telugu">Telugu</option>
+						<option value="Punjabi">Punjabi</option>
+						<option value="Malayalam">Malayalam</option>
+						<option value="Marathi">Marathi</option>
+						<option value="Bengali">Bengali</option>
+						<option value="Oriya">Oriya</option>
+						<option value="Assamese">Assamese</option>
+						<option value="Other">Other</option>
+					</select>
+					  </div> 
+					  </div> 
+					  <div class="form-row field-pincode"> 
+					  <div> 
+					  <label for="id_pincode" class="required"><b>Pincode*</b>:</label> 
+					  <input id="id_pincode" type="text" class="vIntegerField" name="pincode"> 
+					  </div> 
+					  </div> 
+					  <div class="form-row field-short_name"> 
+					  <div> 
+					  <label for="id_short_name">Short name:</label> 
+					  <input id="id_short_name" type="text" class="vTextField" name="short_name" maxlength="50"> 
+					  </div> 
+					  </div> 
+					  <div class="form-row field-address"> 
+					  <div> 
+					  <label for="id_address">Address:</label> 
+					  <input id="id_address" type="text" class="vTextField" name="address" maxlength="200"> 
+					  </div> 
+					  </div> 
+					  <div class="form-row field-examination_board">
+					   <div> 
+					   <label for="id_examination_board">Examination board:</label> 
+					   <input id="id_examination_board" type="text" class="vTextField" name="examination_board" maxlength="100"> 
+					   </div> 
+					   </div> 
+					   <div class="form-row field-other_fee_per_annum"> 
+					   <div> 
+					   <label for="id_other_fee_per_annum">Other fee per annum:</label> 
+					   <input id="id_other_fee_per_annum" type="text" class="vTextField" name="other_fee_per_annum" maxlength="50"> 
+					   </div> 
+					   </div> 
+					   <div class="form-row field-monthly_fee_for_lowest_class"> 
+					   <div> 
+					   <label for="id_monthly_fee_for_lowest_class">Monthly fee for lowest class:</label> 
+					   <input id="id_monthly_fee_for_lowest_class" type="text" class="vTextField" name="monthly_fee_for_lowest_class" maxlength="50"> 
+					   </div> 
+					   </div>
+					    <div class="form-row field-monthly_fee_for_highest_class"> 
+					    <div> 
+					    <label for="id_monthly_fee_for_highest_class">Monthly fee for highest class:</label> 
+					    <input id="id_monthly_fee_for_highest_class" type="text" class="vTextField" name="monthly_fee_for_highest_class" maxlength="50"> 
+					    </div> 
+					    </div>
+						<div id="camera">
+						    <div class="camera-control" data-role="button" onclick="capturePhoto();">Capture Photo</div>
+						    <div style="text-align:center;margin:20px;">
+						        <img id="cameraPic" src="" style="display:none;width:60px;height:60px;"></img>
+						    </div>
+						</div>
+					    <div class="submit-row"> 
+							<button id="submit" type="submit" data-role="button">Submit</button>
+					    	
+					     </div> 
+					      
+					     </div> 
+					 
+	</div><!-- /content -->
+</form>
+</div><!-- /page -->
+
+</body>
+</html>
