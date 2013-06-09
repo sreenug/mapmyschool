@@ -12,15 +12,31 @@
 	<script type='text/javascript'>
 		
 		var imageData;
-		var latitude;
-		var longitude;
+		var othersImageData;
+		var latitude="";
+		var longitude="";
+		var uuid="";
 		
 		document.addEventListener("deviceready", onDeviceReady, false);
 
-    // Cordova is ready
+    function addSchool() {
+		//hide container and show school form
+		$('#school_form').show();
+		$('#others_form').hide();
+		//$('#school_form').css({'visibility':'show'});
+	}
+	function addOthers() {
+		//hide container and show school form
+		$('#school_form').hide();
+		$('#others_form').show();
+		//$('#school_form').css({'visibility':'show'});
+	}
+	
+	// Cordova is ready
     //
     function onDeviceReady() {
         navigator.geolocation.getCurrentPosition(onSuccess, onError);
+		uuid = device.uuid;
 		alert('Device Name: '     + device.name     + '<br />' + 
                             'Device Cordova: '  + device.cordova + '<br />' + 
                             'Device Platform: ' + device.platform + '<br />' + 
@@ -77,6 +93,9 @@
 		};
 		
 		$(document).ready(function() {
+				$('#school_form').hide();
+				$('#others_form').hide();
+				
 					$("#school_form").validate({
 			submitHandler: function(form) {
 			     console.log($(form));
@@ -85,11 +104,11 @@
 			    	 	console.log('submit form');
 						//alert("in clcik");
 				var postData = {
-					"address": $('#id_address').val(), 
 					"examination_board": $('#id_examination_board').val(), 
 					"highest_class": parseInt($('#id_highest_class').val()), 
 					"latitude": latitude,
 					"longitude": longitude,
+					"uuid":uuid,
 					"lowest_class": parseInt($('#id_lowest_class').val()), 
 					"medium_of_instructions": $('#id_medium_of_instructions').val(),
 					"monthly_fee_for_highest_class": parseInt($('#id_monthly_fee_for_highest_class').val()),
@@ -174,10 +193,65 @@
 				}
 			});
 			
-			//$("#submit").click(function(){
+			$("#others_submit").click(function(){
+				var postData = {
+					"latitude": latitude,
+					"longitude": longitude,
+					"uuid":uuid,
+					"others_name": $('#id_others_name').val(),
+					"others_type": $('#id_others_type').val(),
+					"others_image": othersImageData
+					}
+				//alert(postData);
+				$.ajax({
+					type: "GET",
+					url: 'http://54.214.7.11/addothers/',
+					async: true,
+					dataType: "jsonp",
+					data: postData,
+					success: function (data) {	
+						alert("Thanks!"); 
+						//alert(data);
+						$('#others_form')[0].reset();
+					},
+					error: function (xhr, ajaxOptions, thrownError) {
+						alert("Others Data Has been Uploaded"); 
+						alert(xhr.status);
+						alert(xhr);
+						console.log(xhr);
+						alert(thrownError);
+						$('#others_form')[0].reset();
+					}
+				});
 				
-			//});
+			});
 		});
+		
+		function captureOthersPhoto(){
+		    navigator.camera.getPicture(uploadOthersPhoto,null,{sourceType:1,quality:60, destinationType : Camera.DestinationType.DATA_URL});
+			
+		}
+		function uploadOthersPhoto(data){
+		// this is where you would send the image file to server
+		    
+			var smallImage = document.getElementById('othersCameraPic');
+
+      // Unhide image elements
+      //
+			
+			smallImage.style.display = 'block';
+
+      // Show the captured photo
+      // The inline CSS rules are used to resize the image
+      //
+			smallImage.src = "data:image/jpeg;base64," + data;
+			//alert(data);
+			othersImageData = data;
+			return false;
+			
+		}
+		
+		
 		function capturePhoto(){
 		    navigator.camera.getPicture(uploadPhoto,null,{sourceType:1,quality:60, destinationType : Camera.DestinationType.DATA_URL});
 			
@@ -242,6 +316,10 @@
 
 	<div data-role="content">	
 			<div> 
+			<div id="container">
+				<div data-role="button" onclick="addSchool();">Add School</div>
+				<div data-role="button" onclick="addOthers();">Add Others</div>
+			</div>
 					<form id="school_form">
 					<div class="form-row field-name"> 
 						<div> 
@@ -306,12 +384,7 @@
 					  <input id="id_short_name" type="text" class="vTextField" name="short_name" maxlength="50"> 
 					  </div> 
 					  </div> 
-					  <div class="form-row field-address"> 
-					  <div> 
-					  <label for="id_address">Address:</label> 
-					  <input id="id_address" type="text" class="vTextField" name="address" maxlength="200"> 
-					  </div> 
-					  </div> 
+					   
 					  <div class="form-row field-examination_board">
 					   <div> 
 					   <label for="id_examination_board">Examination board:</label> 
@@ -351,6 +424,42 @@
 					 
 	</div><!-- /content -->
 </form>
+
+
+<form id="others_form">
+					<div> 
+						<label for="id_others_type" class="required"><b>Type*:</b></label> 
+						<select name="id_others_type" id="id_others_type"> 
+							<option value="" selected="selected">---------</option> 
+							<option value="Busstop">Busstop</option> 
+							<option value="Railway Station">Railway Station</option> 
+							<option value="Temple">Temple</option> 
+							<option value="Autostand">Autostand</option> 
+						</select> 
+					</div>
+					
+					<div class="form-row field-name"> 
+						<div> 
+						<label for="id_others_name" class="required"><b>Name:*</b></label> 
+						<input id="id_others_name" type="text" class="vTextField" name="name" maxlength="200"> 
+						</div> 
+					</div> 
+					<div id="camera">
+						    <div class="camera-control" data-role="button" onclick="captureOthersPhoto();">Capture Photo</div>
+						    <div style="text-align:center;margin:20px;">
+						        <img id="othersCameraPic" src="" style="display:none;width:60px;height:60px;"></img>
+						    </div>
+						</div>
+					    <div class="submit-row"> 
+							<button id="others_submit" type="submit" data-role="button">Submit</button>
+					    	
+					     </div> 
+					      
+					     </div> 
+					 
+	</div><!-- /content -->
+</form>
+
 </div><!-- /page -->
 
 </body>
